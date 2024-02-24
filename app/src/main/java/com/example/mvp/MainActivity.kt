@@ -1,14 +1,15 @@
 package com.example.mvp
 
-import androidx.appcompat.app.AppCompatActivity
+import android.net.ConnectivityManager
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.mvp.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 class MainActivity : AppCompatActivity(), LoginPresenter.LoginView {
 
@@ -17,10 +18,11 @@ class MainActivity : AppCompatActivity(), LoginPresenter.LoginView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         val loginPresenterImpl = LoginPresenterImpl(this)
 
         binding.loginClick.setOnClickListener {
-            if (NetworkMonitor(this@MainActivity).isNetworkAvailable()) {
+            if (isNetworkAvailable()) {
                 lifecycleScope.launch {
                     launch(Dispatchers.Main) {
                         loginPresenterImpl.doLogin(binding.email.text.toString().trim(), binding.password.text.toString().trim())
@@ -41,11 +43,20 @@ class MainActivity : AppCompatActivity(), LoginPresenter.LoginView {
     }
 
     override fun onSuccess(response: String) {
-        binding.response.text = response
+        lifecycleScope.launch {
+            binding.response.text = response
+        }
     }
 
     override fun onFailure(message: String) {
         binding.response.text = message
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager =
+            getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.isConnected
     }
 
 }
